@@ -1,0 +1,47 @@
+version: '3'
+services:
+
+  elastic:
+    container_name: elastic
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.1
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+      discovery.type: "single-node"
+
+  kibana:
+    container_name: kibana
+    image: docker.elastic.co/kibana/kibana:7.15.1
+    ports:
+      - 5601:5601
+    environment:
+      ELASTICSEARCH_HOSTS: '["http://elastic:9200"]'
+
+  client:
+    image: appropriate/curl:latest
+    command: "curl http://elastic:9200"
+
+  elastic_filler:
+    container_name: elastic_filler
+    build: elastic_filler/
+    ports:
+      - 8081:8081
+    depends_on:
+      - elastic
+
+  leads_uploader:
+    container_name: leads_uploader
+    build: leads_uploader/
+    ports:
+      # - 8080:8080
+      - 5000:5000 # Para o flask
+    depends_on:
+      - elastic
+      - elastic_filler
+
+  api:
+    container_name: api
+    build: api/
+    ports:
+      - 5000:5000
